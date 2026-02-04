@@ -1,14 +1,30 @@
 from typing import List
 import re
 from .models import Question
-from .image_processor import extract_images
+from .image_processor import extract_images, extract_latex_formulas
 
 def detect_question_type(content: str) -> str:
     """Detect the type of question based on content patterns."""
     content_lower = content.lower()
 
     # Check for multiple choice patterns
-    if any(marker in content_lower for marker in ["a.", "b.", "c.", "d."]):
+    # Only detect as multiple choice if there are at least 2 options
+    # and they appear at the start of lines (not in the middle of sentences)
+    option_patterns = ["a.", "b.", "c.", "d.", "e.", "f."]
+    option_count = 0
+
+    # Split content into lines and check for option markers at line beginnings
+    lines = content_lower.split('\n')
+    for line in lines:
+        line = line.strip()
+        # Check if line starts with an option marker followed by space
+        for pattern in option_patterns:
+            if line.startswith(pattern + ' ') or line.startswith(pattern + '\t'):
+                option_count += 1
+                break  # Only count one option per line
+
+    # Require at least 2 distinct option markers to be considered multiple choice
+    if option_count >= 2:
         return "multiple_choice"
 
     # Check for true/false patterns
@@ -114,6 +130,7 @@ def parse_markdown(content: str) -> List[Question]:
         question_type = detect_question_type(q_content)
         options = []
         images = extract_images(q_content)
+        latex_formulas = extract_latex_formulas(q_content)
 
         if question_type == "multiple_choice":
             options = parse_options(q_content)
@@ -128,7 +145,8 @@ def parse_markdown(content: str) -> List[Question]:
             content=clean_content,
             question_type=question_type,
             options=options if options else None,
-            images=images if images else None
+            images=images if images else None,
+            latex_formulas=latex_formulas if latex_formulas else None
         ))
 
     return questions
