@@ -34,21 +34,101 @@ def parse_options(content: str) -> List[str]:
 
     return options
 
+def split_questions(content: str) -> List[str]:
+    """Split markdown content into individual questions.
+
+    Args:
+        content: Markdown content containing one or more questions
+
+    Returns:
+        List of individual question strings
+    """
+    # Find all question boundaries using multiple patterns
+    questions = []
+
+    # Pattern for numbered questions: "1. " at the start of a line
+    numbered_pattern = r'(?:^|\n)(\d+\.\s+.*?)(?=\n\d+\.|\n\s*---|\n\s*\n+|\Z)'
+
+    # Pattern for questions with separators
+    separator_pattern = r'(?:^|\n\s*---\s*\n)(.*?)(?=\n\s*---|\n\d+\.|\n\s*\n+|\Z)'
+
+    # Find numbered questions first
+    matches = re.findall(numbered_pattern, content, re.DOTALL)
+    if matches:
+        questions = [match.strip() for match in matches if match.strip()]
+        if len(questions) > 1:
+            return questions
+
+    # If no numbered questions, try separator pattern
+    matches = re.findall(separator_pattern, content, re.DOTALL)
+    if matches:
+        questions = [match.strip() for match in matches if match.strip()]
+        if len(questions) > 1:
+            return questions
+
+    # If still no good split, try splitting by multiple empty lines
+    questions = re.split(r'\n\s*\n\s*\n+', content)
+    questions = [q.strip() for q in questions if q.strip()]
+    if len(questions) > 1:
+        return questions
+
+    # If no clear splitting pattern is found, treat as single question
+    return [content.strip()]
+
+
+def clean_question_content(content: str) -> str:
+    """Clean and normalize question content.
+
+    Args:
+        content: Raw question content
+
+    Returns:
+        Cleaned question content
+    """
+    # Remove leading numbering like "1.", "2." etc. (support multiline)
+    cleaned = re.sub(r'^\s*\d+\.\s*', '', content, flags=re.MULTILINE)
+
+    # Extract just the question text (before options start)
+    # For multiple choice questions, look for the first option marker
+    lines = cleaned.strip().split('\n')
+    question_lines = []
+
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        # Check if this line starts with an option marker (A., B., etc.)
+        if re.match(r'^[A-Z]\.\s', line):
+            break  # Stop at first option
+        question_lines.append(line)
+
+    return ' '.join(question_lines).strip()
+
+
 def parse_markdown(content: str) -> List[Question]:
     """Parse markdown content and extract questions."""
-    question_type = detect_question_type(content)
-    options = []
-    images = extract_images(content)
+    questions_content = split_questions(content)
+    questions = []
 
-    if question_type == "multiple_choice":
-        options = parse_options(content)
+    for q_content in questions_content:
+        question_type = detect_question_type(q_content)
+        options = []
+        images = extract_images(q_content)
 
-    # Remove image tags from content
-    clean_content = re.sub(r'!\[.*?\]\(.*?\)', '', content).strip()
+        if question_type == "multiple_choice":
+            options = parse_options(q_content)
 
-    return [Question(
-        content=clean_content,
-        question_type=question_type,
-        options=options if options else None,
-        images=images if images else None
-    )]
+        # Remove image tags from content
+        clean_content = re.sub(r'!\[.*?\]\(.*?\)', '', q_content).strip()
+
+        # Clean and normalize the question content
+        clean_content = clean_question_content(clean_content)
+
+        questions.append(Question(
+            content=clean_content,
+            question_type=question_type,
+            options=options if options else None,
+            images=images if images else None
+        ))
+
+    return questions
