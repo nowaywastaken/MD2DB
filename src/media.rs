@@ -3,6 +3,7 @@
 //! This module handles extraction and processing of media files.
 
 use anyhow::Result;
+use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 use std::path::{Path, PathBuf};
 
@@ -62,9 +63,13 @@ pub fn normalize_path(path: &Path) -> PathBuf {
     PathBuf::from(path_str)
 }
 
-/// Reference to an image (simplified version)
-#[derive(Debug, Clone)]
+/// Reference to an image
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
 pub enum ImageRef {
+    /// Remote URL reference
+    Remote { url: String },
+    /// Local file reference with content hash
     Local { hash: String, original_path: String },
 }
 

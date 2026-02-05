@@ -4,6 +4,7 @@ mod database;
 mod api;
 mod media;
 mod classifier;
+mod zip;
 
 use anyhow::Result;
 use tracing::{info, Level};

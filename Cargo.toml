@@ -9,6 +9,7 @@ authors = ["MD2DB Contributors"]
 # Web framework
 axum = { version = "0.7", features = ["multipart"] }
 tokio = { version = "1.35", features = ["full"] }
+tokio-util = { version = "0.7", features = ["io"] }
 tower = "0.4"
 tower-http = { version = "0.5", features = ["trace", "compression-br", "compression-gzip"] }
 
@@ -51,8 +52,8 @@ futures = "0.3"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
-# ZIP processing (async)
-async_zip = { version = "0.0.16", features = ["tokio"] }
+# ZIP processing
+zip = "2.1"
 
 [dev-dependencies]
 criterion = "0.5"
