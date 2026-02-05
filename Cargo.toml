@@ -38,7 +38,7 @@ uuid = { version = "1.6", features = ["v4", "serde"] }
 sha2 = "0.10"
 
 # Parallel processing
-rayon = "1.8"
+rayon = { version = "1.8", optional = true }
 
 # File handling
 tempfile = "3.8"
@@ -61,13 +61,18 @@ hyper = { version = "0.14", features = ["full"] }
 tower = "0.4"
 
 [features]
-default = ["postgres"]
+default = ["postgres", "parallel"]
 postgres = ["sqlx"]
 mongodb = ["dep:mongodb"]
+parallel = ["rayon"]
 
 [[bin]]
 name = "md2db"
 path = "src/main.rs"
+
+[[bench]]
+name = "parser_benchmark"
+harness = false
 
 [profile.release]
 opt-level = 3
