@@ -10,7 +10,7 @@ authors = ["MD2DB Contributors"]
 axum = { version = "0.7", features = ["multipart"] }
 tokio = { version = "1.35", features = ["full"] }
 tokio-util = { version = "0.7", features = ["io"] }
-tower = "0.4"
+tower = { version = "0.4", features = ["util"] }
 tower-http = { version = "0.5", features = ["trace", "compression-br", "compression-gzip"] }
 
 # Serialization
@@ -57,6 +57,8 @@ zip = "2.1"
 
 [dev-dependencies]
 criterion = "0.5"
+hyper = { version = "0.14", features = ["full"] }
+tower = "0.4"
 
 [features]
 default = ["postgres"]
