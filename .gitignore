@@ -1,13 +1,46 @@
+# 核心环境与安全
+.env
+.env.*
+!.env.example
+*.pem
+secrets.*
+
+# IDE 与编辑器
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 系统产物
+.DS_Store
+Thumbs.db
+
 # Rust
 /target/
-Cargo.lock
+# Cargo.lock - 在二进制项目中建议保留，在库中建议忽略。
+# 此项目包含 src 和 Cargo.toml，通常建议保留以确保构建可重现性。
+# 如果你确定这是纯工具集，可以考虑取消注释下一行。
+# Cargo.lock
 **/*.rs.bk
 *.pdb
 
 # Python
-.DS_Store
-*.pyc
+*.py[cod]
+*$py.class
 __pycache__/
 *.egg-info/
 .pytest_cache/
+.venv/
+env/
+venv/
+ENV/
+build/
+dist/
+
+# 其他
 .worktrees/
+.dockerignore
+docker-compose.override.yml
