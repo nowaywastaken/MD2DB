@@ -17,7 +17,7 @@ class BatchWriter:
     def _setup_indexes(self):
         """Ensure indexes exist on questions collection."""
         self.db.questions.create_index("question_type")
-        self.db.questions.create_index("created_at", -1)
+        self.db.questions.create_index([("created_at", -1)])
 
     def add(self, document: QuestionDocument):
         """Add a document to the buffer. Flushes if buffer is full."""
