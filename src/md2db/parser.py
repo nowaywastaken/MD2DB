@@ -1,7 +1,16 @@
 from typing import List
 import re
 from .models import Question
-from .image_processor import extract_images, extract_latex_formulas
+from .image_processor import extract_all
+
+# Pre-compiled regex patterns for performance
+_NUMBERED_PATTERN = re.compile(r'(?:^|\n)(\d+\.\s+.*?)(?=\n\d+\.|\n\s*---|\n\s*\n+|\Z)', re.DOTALL)
+_SEPARATOR_PATTERN = re.compile(r'(?:^|\n\s*---\s*\n)(.*?)(?=\n\s*---|\n\d+\.|\n\s*\n+|\Z)', re.DOTALL)
+_OPTION_PATTERN = re.compile(r'^[A-Z]\.\s*(.+)$')
+_LEADING_NUMBER_PATTERN = re.compile(r'^\s*\d+\.\s*', re.MULTILINE)
+_OPTION_MARKER_PATTERN = re.compile(r'^[A-Z]\.\s')
+_IMAGE_TAG_PATTERN = re.compile(r'!\[.*?\]\(.*?\)')
+_EMPTY_LINE_SPLIT_PATTERN = re.compile(r'\n\s*\n\s*\n+')
 
 def detect_question_type(content: str) -> str:
     """Detect the type of question based on content patterns."""
@@ -40,11 +49,9 @@ def detect_question_type(content: str) -> str:
 def parse_options(content: str) -> List[str]:
     """Extract options from multiple choice questions."""
     options = []
-    # Match patterns like "A. option text", "B. option text", etc.
-    pattern = r'^[A-Z]\.\s*(.+)$'
 
     for line in content.split('\n'):
-        match = re.match(pattern, line.strip())
+        match = _OPTION_PATTERN.match(line.strip())
         if match:
             options.append(match.group(1).strip())
 
@@ -62,28 +69,22 @@ def split_questions(content: str) -> List[str]:
     # Find all question boundaries using multiple patterns
     questions = []
 
-    # Pattern for numbered questions: "1. " at the start of a line
-    numbered_pattern = r'(?:^|\n)(\d+\.\s+.*?)(?=\n\d+\.|\n\s*---|\n\s*\n+|\Z)'
-
-    # Pattern for questions with separators
-    separator_pattern = r'(?:^|\n\s*---\s*\n)(.*?)(?=\n\s*---|\n\d+\.|\n\s*\n+|\Z)'
-
     # Find numbered questions first
-    matches = re.findall(numbered_pattern, content, re.DOTALL)
+    matches = _NUMBERED_PATTERN.findall(content)
     if matches:
         questions = [match.strip() for match in matches if match.strip()]
         if len(questions) > 1:
             return questions
 
     # If no numbered questions, try separator pattern
-    matches = re.findall(separator_pattern, content, re.DOTALL)
+    matches = _SEPARATOR_PATTERN.findall(content)
     if matches:
         questions = [match.strip() for match in matches if match.strip()]
         if len(questions) > 1:
             return questions
 
     # If still no good split, try splitting by multiple empty lines
-    questions = re.split(r'\n\s*\n\s*\n+', content)
+    questions = _EMPTY_LINE_SPLIT_PATTERN.split(content)
     questions = [q.strip() for q in questions if q.strip()]
     if len(questions) > 1:
         return questions
@@ -102,7 +103,7 @@ def clean_question_content(content: str) -> str:
         Cleaned question content
     """
     # Remove leading numbering like "1.", "2." etc. (support multiline)
-    cleaned = re.sub(r'^\s*\d+\.\s*', '', content, flags=re.MULTILINE)
+    cleaned = _LEADING_NUMBER_PATTERN.sub('', content)
 
     # Extract just the question text (before options start)
     # For multiple choice questions, look for the first option marker
@@ -114,7 +115,7 @@ def clean_question_content(content: str) -> str:
         if not line:
             continue
         # Check if this line starts with an option marker (A., B., etc.)
-        if re.match(r'^[A-Z]\.\s', line):
+        if _OPTION_MARKER_PATTERN.match(line):
             break  # Stop at first option
         question_lines.append(line)
 
@@ -129,14 +130,17 @@ def parse_markdown(content: str) -> List[Question]:
     for q_content in questions_content:
         question_type = detect_question_type(q_content)
         options = []
-        images = extract_images(q_content)
-        latex_formulas = extract_latex_formulas(q_content)
+
+        # Extract all media content in a single pass
+        extracted = extract_all(q_content)
+        images = extracted.images
+        latex_formulas = extracted.latex_formulas
 
         if question_type == "multiple_choice":
             options = parse_options(q_content)
 
         # Remove image tags from content
-        clean_content = re.sub(r'!\[.*?\]\(.*?\)', '', q_content).strip()
+        clean_content = _IMAGE_TAG_PATTERN.sub('', q_content).strip()
 
         # Clean and normalize the question content
         clean_content = clean_question_content(clean_content)
