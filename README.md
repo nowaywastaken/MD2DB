@@ -35,3 +35,13 @@ python -m md2db your_exam.md
 ```bash
 uvicorn src.md2db.api:app --reload
 ```
+
+## MongoDB Storage
+
+For large files, use parallel processing with MongoDB:
+
+```bash
+python -m md2db large_exam.md --parallel --workers 4
+```
+
+See [docs/MONGODB.md](docs/MONGODB.md) for details on MongoDB integration, performance tuning, and architecture.
