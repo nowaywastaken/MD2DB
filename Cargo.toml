@@ -5,6 +5,13 @@ edition = "2021"
 description = "Markdown to Database converter - High performance Rust implementation"
 authors = ["MD2DB Contributors"]
 
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "md2db"
+path = "src/main.rs"
+
 [dependencies]
 # Web framework
 axum = { version = "0.7", features = ["multipart"] }
@@ -65,10 +72,6 @@ default = ["postgres", "parallel"]
 postgres = ["sqlx"]
 mongodb = ["dep:mongodb"]
 parallel = ["rayon"]
-
-[[bin]]
-name = "md2db"
-path = "src/main.rs"
 
 [[bench]]
 name = "parser_benchmark"
